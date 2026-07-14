@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "runcomfy": {
+      "url": "https://mcp.runcomfy.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${RUNCOMFY_TOKEN}"
+      }
+    }
+  }
+}
