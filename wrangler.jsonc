@@ -1,0 +1,38 @@
+{
+  "name": "runcomfy-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-13",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "mcp.runcomfy.com", "custom_domain": true }
+  ],
+  "containers": [
+    {
+      "class_name": "RuncomfyMcpContainer",
+      "image": "./Dockerfile",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "RuncomfyMcpContainer",
+        "name": "RUNCOMFY_MCP_CONTAINER"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RuncomfyMcpContainer"]
+    }
+  ],
+  "vars": {
+    "CONTAINER_INSTANCE_NAME": "runcomfy-unified",
+    "CONTAINER_STARTUP_TIMEOUT_MS": "15000",
+    "CONTAINER_PORT_READY_TIMEOUT_MS": "30000",
+    "CONTAINER_WAIT_INTERVAL_MS": "300",
+    "MCP_MAX_BODY_BYTES": "1048576",
+    "RUNCOMFY_SERVERLESS_BASE_URL": "https://api.runcomfy.net"
+  }
+}

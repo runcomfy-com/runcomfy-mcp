@@ -1,0 +1,17 @@
+.git
+.gitignore
+.tmp
+.venv
+.wrangler
+node_modules
+src
+package.json
+package-lock.json
+tsconfig.json
+wrangler.jsonc
+README.md
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.tgz

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.runcomfy-com/runcomfy-mcp",
+  "description": "Remote MCP server for RunComfy Serverless API (ComfyUI): deployments and async inference.",
+  "version": "1.0.0",
+  "websiteUrl": "https://docs.runcomfy.com/mcp",
+  "repository": {
+    "url": "https://github.com/runcomfy-com/runcomfy-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.runcomfy.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "RunComfy API token as a Bearer credential (Bearer <YOUR_RUNCOMFY_TOKEN>). Get it from https://www.runcomfy.com/profile",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "runcomfy-mcp-cloudflare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260413.1",
+    "typescript": "^6.0.2",
+    "wrangler": "^4.81.1"
+  }
+}
