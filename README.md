@@ -1,6 +1,11 @@
 # RunComfy MCP
 
+[![Website](https://img.shields.io/badge/Website-www.runcomfy.com-6C47FF)](https://www.runcomfy.com)
+[![Docs](https://img.shields.io/badge/Docs-MCP-2965F1)](https://docs.runcomfy.com/mcp)
+
 MCP server for the [RunComfy Serverless API (ComfyUI)](https://docs.runcomfy.com/serverless/introduction). Manage deployments, run inference, and retrieve results from AI assistants like Claude, Cursor, and Windsurf.
+
+**Website**: [www.runcomfy.com](https://www.runcomfy.com)
 
 **Endpoint**: `https://mcp.runcomfy.com/mcp`
 
