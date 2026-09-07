@@ -23,10 +23,11 @@ class RequestContextMiddleware:
         headers = Headers(raw=scope.get("headers", []))
         request_id = headers.get("x-request-id") or str(uuid.uuid4())
 
-        # Capture the user token forwarded by the Worker so the client
-        # can use it for outbound API calls (per-user billing).
-        user_token = headers.get("x-runcomfy-user-token") or ""
-        token_reset = current_user_token.set(user_token if user_token else None)
+        # Only the authenticated edge's private forwarding header establishes
+        # downstream identity. The public Authorization header is never used
+        # by the Python service.
+        user_token = (headers.get("x-runcomfy-user-token") or "").strip()
+        token_reset = current_user_token.set(user_token or None)
 
         method = scope.get("method", "GET")
         path = scope.get("path", "")

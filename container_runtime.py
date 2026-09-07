@@ -22,14 +22,6 @@ def error_details(exc: BaseException) -> dict[str, str]:
     }
 
 
-def _required_env(name: str, environ: Mapping[str, str] | None = None) -> str:
-    source = environ or os.environ
-    value = source.get(name, "").strip()
-    if not value:
-        raise RuntimeError(f"{name} is required")
-    return value
-
-
 def optional_env(name: str, environ: Mapping[str, str] | None = None) -> str | None:
     source = environ or os.environ
     value = source.get(name, "").strip()
@@ -50,4 +42,8 @@ def get_container_port(default: int = 8000) -> int:
 
 
 def validate_runtime_environment() -> None:
-    _required_env("RUNCOMFY_API_KEY")
+    """Validate process-level configuration.
+
+    Authentication is intentionally request-scoped, so there is no shared
+    RunComfy credential to validate at process startup.
+    """

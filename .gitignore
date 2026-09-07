@@ -1,3 +1,9 @@
+# macOS metadata
+.DS_Store
+
+# Local marketplace review material (recordings, credentials, and evidence)
+/submission/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -136,6 +142,10 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
 .envrc
 .venv
 node_modules/
@@ -146,6 +156,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.claude/
 
 # Spyder project settings
 .spyderproject

@@ -16,9 +16,9 @@ RUNCOMFY_MODEL_API_BASE_URL = "https://model-api.runcomfy.net"
 RUNCOMFY_TRAINER_API_BASE_URL = "https://trainer-api.runcomfy.net"
 SMALL_DATASET_UPLOAD_LIMIT_BYTES = 150_000_000
 
-# Per-request user token forwarded by the Cloudflare Worker.
-# When set, outbound API calls use this token instead of the default
-# RUNCOMFY_API_KEY, so billing is attributed to the correct user.
+# Per-request user token forwarded by the authenticated Cloudflare Worker.
+# There is deliberately no process-wide fallback credential: every protected
+# outbound call must be attributable to the caller that initiated the request.
 current_user_token: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "current_user_token", default=None
 )
@@ -54,7 +54,6 @@ class RunComfyAPIError(Exception):
 class BaseRunComfyClient:
     def __init__(
         self,
-        api_key: str,
         *,
         base_url: str,
         timeout_seconds: float = 120.0,
@@ -64,12 +63,7 @@ class BaseRunComfyClient:
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             headers={
-                "Authorization": f"Bearer {api_key}",
                 "Accept": "application/json",
-                # Attribution markers so api.runcomfy.net can identify
-                # MCP-originated traffic (filter logs by either header).
-                "User-Agent": "runcomfy-mcp/1.0",
-                "X-RunComfy-Client": "mcp",
             },
             timeout=timeout_seconds,
             follow_redirects=True,
@@ -99,12 +93,17 @@ class BaseRunComfyClient:
         if json_body is not None and files is None and "Content-Type" not in request_headers:
             request_headers["Content-Type"] = "application/json"
 
-        # Use per-request user token when forwarded by the Worker,
-        # so billing is attributed to the calling user. Falls back to
-        # the default API key set on the client (for local dev).
-        user_token = current_user_token.get()
-        if auth and user_token:
-            request_headers["Authorization"] = f"Bearer {user_token}"
+        if auth:
+            user_token = current_user_token.get()
+            if not user_token or not user_token.strip():
+                raise RunComfyAPIError(
+                    message="Authenticated RunComfy credential is required",
+                    status_code=401,
+                )
+
+            # The request-scoped credential is authoritative. Never allow an
+            # explicit header supplied by a caller to override it.
+            request_headers["Authorization"] = f"Bearer {user_token.strip()}"
 
         client = self._client if auth else self._public_client
         response = await client.request(
@@ -181,8 +180,8 @@ class BaseRunComfyClient:
 
 
 class RunComfyServerlessClient(BaseRunComfyClient):
-    def __init__(self, api_key: str, *, base_url: str = RUNCOMFY_SERVERLESS_BASE_URL, timeout_seconds: float = 120.0) -> None:
-        super().__init__(api_key, base_url=base_url, timeout_seconds=timeout_seconds)
+    def __init__(self, *, base_url: str = RUNCOMFY_SERVERLESS_BASE_URL, timeout_seconds: float = 120.0) -> None:
+        super().__init__(base_url=base_url, timeout_seconds=timeout_seconds)
 
     async def list_deployments(
         self,
@@ -285,6 +284,14 @@ class RunComfyServerlessClient(BaseRunComfyClient):
             "DELETE",
             f"/prod/v2/deployments/{deployment_id}",
         )
+
+    async def get_balance(self) -> dict[str, Any]:
+        """Account-wide remaining balance.
+
+        One wallet funds Serverless, Model, and Trainer work alike, so this
+        lives on the core API rather than being mirrored per product.
+        """
+        return await self._request("GET", "/prod/v2/balance")
 
     async def get_object_info(self, object_info_url: str) -> dict[str, Any]:
         return await self._request("GET", object_info_url)
@@ -396,8 +403,8 @@ class RunComfyServerlessClient(BaseRunComfyClient):
 
 
 class RunComfyModelAPIClient(BaseRunComfyClient):
-    def __init__(self, api_key: str, *, base_url: str = RUNCOMFY_MODEL_API_BASE_URL, timeout_seconds: float = 120.0) -> None:
-        super().__init__(api_key, base_url=base_url, timeout_seconds=timeout_seconds)
+    def __init__(self, *, base_url: str = RUNCOMFY_MODEL_API_BASE_URL, timeout_seconds: float = 120.0) -> None:
+        super().__init__(base_url=base_url, timeout_seconds=timeout_seconds)
 
     async def submit_request(
         self,
@@ -410,6 +417,33 @@ class RunComfyModelAPIClient(BaseRunComfyClient):
             f"/v1/models/{model_id}",
             json_body=request_body or {},
         )
+
+    async def list_models(
+        self,
+        *,
+        search: str | None = None,
+        category: str | None = None,
+        kind: str | None = None,
+        include_schema: bool = False,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        params: list[tuple[str, str]] = [("limit", str(limit)), ("offset", str(offset))]
+        if search:
+            params.append(("search", search))
+        if category:
+            params.append(("category", category))
+        if kind:
+            params.append(("kind", kind))
+        if include_schema:
+            params.append(("include_schema", "true"))
+        return await self._request("GET", "/v1/models", params=params)
+
+    async def list_model_categories(self) -> dict[str, Any]:
+        return await self._request("GET", "/v1/models/categories")
+
+    async def get_model(self, model_id: str) -> dict[str, Any]:
+        return await self._request("GET", f"/v1/models/{model_id}")
 
     async def get_request_status(self, request_id: str) -> dict[str, Any]:
         return await self._request("GET", f"/v1/requests/{request_id}/status")
@@ -457,8 +491,8 @@ class RunComfyModelAPIClient(BaseRunComfyClient):
 
 
 class RunComfyTrainerAPIClient(BaseRunComfyClient):
-    def __init__(self, api_key: str, *, base_url: str = RUNCOMFY_TRAINER_API_BASE_URL, timeout_seconds: float = 120.0) -> None:
-        super().__init__(api_key, base_url=base_url, timeout_seconds=timeout_seconds)
+    def __init__(self, *, base_url: str = RUNCOMFY_TRAINER_API_BASE_URL, timeout_seconds: float = 120.0) -> None:
+        super().__init__(base_url=base_url, timeout_seconds=timeout_seconds)
 
     async def create_dataset(self, *, name: str | None = None) -> dict[str, Any]:
         body: dict[str, Any] = {}

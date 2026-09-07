@@ -1,5 +1,10 @@
 .git
 .gitignore
+.claude
+.env
+.env.*
+.dev.vars
+.dev.vars.*
 .tmp
 .venv
 .wrangler
@@ -15,3 +20,6 @@ __pycache__
 *.pyo
 *.pyd
 *.tgz
+*service-account*.json
+*.pem
+*.key
