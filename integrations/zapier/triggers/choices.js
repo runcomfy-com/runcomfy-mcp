@@ -1,4 +1,5 @@
 const { request, isObject } = require('../lib/api');
+const { isGenerationModel } = require('../lib/model-inputs');
 
 const models = {
   key: 'model_choices', noun: 'Model',
@@ -11,7 +12,7 @@ const models = {
         ...(bundle.inputData.model_search ? { search: bundle.inputData.model_search } : {}),
       } });
       if (!Array.isArray(data.models)) throw new Error('RunComfy returned an unexpected model list.');
-      return data.models.filter((model) => isObject(model) && typeof model.model_id === 'string').map((model) => ({
+      return data.models.filter((model) => isObject(model) && typeof model.model_id === 'string' && isGenerationModel(model)).map((model) => ({
         ...model, id: model.model_id,
         name: `${model.display_name || model.model_id}${model.base_price_usd != null ? ` — $${model.base_price_usd}/${model.price_unit || 'request'}` : ''}`,
       }));

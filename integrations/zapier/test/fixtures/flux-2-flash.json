@@ -1,0 +1,18 @@
+{
+  "source_url": "https://www.runcomfy.com/models/blackforestlabs/flux-2-flash/api",
+  "fixture_note": "Public input schema captured September 15, 2026; the lengthy example prompt default is omitted.",
+  "model_id": "blackforestlabs/flux-2/flash/text-to-image",
+  "categories": ["text-to-image"],
+  "input_schema": {
+    "type": "object",
+    "title": "Input schema",
+    "required": ["prompt"],
+    "properties": {
+      "prompt": {"title": "Prompt", "description": "", "type": "string"},
+      "guidance_scale": {"title": "Guidance Scale", "description": "How closely the model should stick to the prompt.", "type": "float", "minimum": 0, "maximum": 20, "default": 2.5},
+      "seed": {"title": "Seed", "description": "", "type": "integer", "default": null},
+      "image_size": {"title": "Image Size", "description": "", "type": "string", "enum": ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"], "default": "landscape_4_3"},
+      "output_format": {"title": "Output Format", "description": "The format of the generated image.", "type": "string", "enum": ["jpeg", "png", "webp"], "default": "png"}
+    }
+  }
+}

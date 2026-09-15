@@ -17,7 +17,7 @@ module.exports = {
       if (bundle.inputData.overrides) body.overrides = parseObject(bundle.inputData.overrides, 'Workflow Input Overrides');
       if (bundle.inputData.workflow_api_json) body.workflow_api_json = parseObject(bundle.inputData.workflow_api_json, 'Complete Workflow JSON');
       if (body.workflow_api_json && body.overrides && Object.keys(body.overrides).length) throw new Error('Use Workflow Input Overrides or Complete Workflow JSON, not both.');
-      return submission(await request(z, bundle, 'serverless', `/prod/v2/deployments/${deployment}/inference`, { method: 'POST', body }), {
+      return submission(z, await request(z, bundle, 'serverless', `/prod/v2/deployments/${deployment}/inference`, { method: 'POST', body }), {
         service: 'serverless', deployment_id: bundle.inputData.deployment_id.trim(),
       });
     },

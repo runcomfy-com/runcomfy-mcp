@@ -23,6 +23,13 @@ const parseObject = (value, label) => {
   return parsed;
 };
 
+const requestFailure = (z, method, message, code, status) => {
+  // A submitted job may already be billable. HaltedError stops this run
+  // without making the action eligible for Zapier AutoReplay.
+  if (method === 'POST') return new z.errors.HaltedError(`${message} ${UNCERTAIN}`);
+  return new z.errors.Error(message, code, status);
+};
+
 const request = async (z, bundle, service, path, { method = 'GET', body, params } = {}) => {
   if (!BASES[service] || !path.startsWith('/') || path.startsWith('//')) throw new Error('Invalid RunComfy API endpoint.');
   const token = typeof bundle.authData.api_token === 'string' ? bundle.authData.api_token.trim() : '';
@@ -36,19 +43,22 @@ const request = async (z, bundle, service, path, { method = 'GET', body, params 
       timeout: 10000, redirect: 'error', skipThrowForStatus: true, throwForThrottlingEarly: false,
     });
   } catch {
-    throw new z.errors.Error(`RunComfy could not be reached. ${method === 'POST' ? UNCERTAIN : 'Try again shortly.'}`, 'RunComfyConnectionError');
+    throw requestFailure(z, method, 'RunComfy could not be reached.', 'RunComfyConnectionError');
   }
-  const data = response.data;
+  let data;
+  try { data = response.data; } catch {
+    throw requestFailure(z, method, 'RunComfy returned invalid JSON.', 'InvalidResponse');
+  }
   const applicationError = isObject(data) && data.error_code !== undefined && data.error_code !== null;
   if (response.status < 200 || response.status >= 300 || applicationError) {
-    const code = applicationError ? `, code ${data.error_code}` : '';
+    const code = applicationError && Number.isSafeInteger(data.error_code) ? `, code ${data.error_code}` : '';
     // Never copy API response text into Zap errors; it may contain request inputs or credentials.
     const message = [401, 403].includes(response.status)
       ? 'RunComfy rejected this connection. Check your API token and access to the selected resource.'
-      : `RunComfy could not complete the request (HTTP ${response.status}${code}). ${method === 'POST' ? UNCERTAIN : 'Check the request ID and account access.'}`;
-    throw new z.errors.Error(message, 'RunComfyAPIError', response.status);
+      : `RunComfy could not complete the request (HTTP ${response.status}${code}). Check the request ID and account access.`;
+    throw requestFailure(z, method, message, 'RunComfyAPIError', response.status);
   }
-  if (!isObject(data) && !Array.isArray(data)) throw new z.errors.Error('RunComfy returned an unexpected response.', 'InvalidResponse');
+  if (!isObject(data) && !Array.isArray(data)) throw requestFailure(z, method, 'RunComfy returned an unexpected response.', 'InvalidResponse');
   return data;
 };
 
@@ -57,10 +67,14 @@ const objectResponse = (data) => {
   return data;
 };
 
-const submission = (data, extra) => {
-  objectResponse(data);
-  if (typeof data.request_id !== 'string' || !data.request_id.trim()) throw new Error(`RunComfy did not return a request ID. ${UNCERTAIN}`);
-  return { ...data, ...extra, id: data.request_id };
+const submission = (z, data, extra) => {
+  if (!isObject(data) || typeof data.request_id !== 'string' || !data.request_id.trim()) {
+    throw new z.errors.HaltedError(`RunComfy did not return a request ID. ${UNCERTAIN}`);
+  }
+  try { pathId(data.request_id); } catch {
+    throw new z.errors.HaltedError(`RunComfy returned an invalid request ID. ${UNCERTAIN}`);
+  }
+  return { ...data, ...extra, id: data.request_id.trim(), request_id: data.request_id.trim() };
 };
 
 const confirmPaid = (z, value) => {

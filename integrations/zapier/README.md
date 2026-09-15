@@ -51,7 +51,7 @@ Each status/result action performs one read. It does not block until completion,
 
 Use `output_urls` from the result to pass generated media to your next step. Outputs remain available in the original `output` (Model API) or `outputs` (ComfyUI API) field too. Request IDs from one API cannot be used with the other; mapping **Request Type** avoids that mistake.
 
-Do not automatically replay a failed submit step without checking RunComfy. A timeout or connection error may occur after the API accepts the job; executing it again can create another paid request. This integration does not implement automatic submit retries or claim API idempotency.
+Do not automatically replay a failed submit step without checking RunComfy. A timeout or connection error may occur after the API accepts the job; executing it again can create another paid request. After a paid submit attempt, network errors, API failures, invalid JSON, and malformed acknowledgements stop that run with Zapier's `HaltedError`, preventing AutoReplay of that uncertain submission. Check RunComfy before deliberately running the action again. This integration does not claim API idempotency.
 
 ## Develop and test
 

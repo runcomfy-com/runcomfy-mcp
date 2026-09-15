@@ -1,5 +1,5 @@
 const { request, modelPath, submission, confirmPaid, paidField } = require('../lib/api');
-const { getModel, modelFields, collectInputs } = require('../lib/model-inputs');
+const { getModel, modelFields, collectInputs, isGenerationModel } = require('../lib/model-inputs');
 
 module.exports = {
   key: 'generate_image_video', noun: 'Generation Request',
@@ -18,13 +18,12 @@ module.exports = {
     perform: async (z, bundle) => {
       confirmPaid(z, bundle.inputData.accept_charges);
       const model = await getModel(z, bundle);
-      const categories = Array.isArray(model.categories) ? model.categories : [];
-      if (!categories.some((category) => typeof category === 'string' && (category.endsWith('-to-image') || category.endsWith('-to-video') || category === 'edit-video'))) {
+      if (!isGenerationModel(model)) {
         throw new Error('Choose a model that generates images or videos. No paid request was submitted.');
       }
       const inputs = collectInputs(model, bundle.inputData);
       const response = await request(z, bundle, 'model', `/v1/models/${modelPath(bundle.inputData.model_id)}`, { method: 'POST', body: inputs });
-      return submission(response, { service: 'model', model_id: bundle.inputData.model_id.trim() });
+      return submission(z, response, { service: 'model', model_id: bundle.inputData.model_id.trim() });
     },
     sample: { id: 'request-example', request_id: 'request-example', service: 'model', model_id: 'blackforestlabs/flux-1-kontext/pro/edit', status: 'in_queue' },
     outputFields: [

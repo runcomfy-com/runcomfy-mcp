@@ -1,14 +1,35 @@
 const Ajv = require('ajv');
 const { request, modelPath, objectResponse, isObject, parseObject } = require('./api');
-const ajv = new Ajv({ strict: false, allErrors: true, validateFormats: false });
+const isGenerationModel = (model) => Array.isArray(model.categories) && model.categories.some((category) =>
+  typeof category === 'string' && (category.endsWith('-to-image') || category.endsWith('-to-video') || category === 'edit-video'));
 const inputKey = (name) => `input_${Buffer.from(name).toString('hex')}`;
 const getModel = async (z, bundle) => objectResponse(await request(z, bundle, 'model', `/v1/models/${modelPath(bundle.inputData.model_id)}`));
+
+// RunComfy model metadata uses "float" for fractional numbers. Normalize only
+// schema nodes; literal defaults, enums, and constants must remain untouched.
+const normalizeSchema = (schema) => {
+  if (!isObject(schema)) return schema;
+  const normalized = { ...schema };
+  if (normalized.type === 'float') normalized.type = 'number';
+  if (Array.isArray(normalized.type)) normalized.type = normalized.type.map((type) => type === 'float' ? 'number' : type);
+  for (const key of ['properties', 'patternProperties', '$defs', 'definitions', 'dependentSchemas']) {
+    if (isObject(schema[key])) normalized[key] = Object.fromEntries(Object.entries(schema[key]).map(([name, value]) => [name, normalizeSchema(value)]));
+  }
+  for (const key of ['items', 'additionalItems', 'additionalProperties', 'contains', 'propertyNames', 'not', 'if', 'then', 'else', 'unevaluatedItems', 'unevaluatedProperties']) {
+    if (schema[key] !== undefined) normalized[key] = Array.isArray(schema[key]) ? schema[key].map(normalizeSchema) : normalizeSchema(schema[key]);
+  }
+  for (const key of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
+    if (Array.isArray(schema[key])) normalized[key] = schema[key].map(normalizeSchema);
+  }
+  if (isObject(schema.dependencies)) normalized.dependencies = Object.fromEntries(Object.entries(schema.dependencies).map(([key, value]) => [key, Array.isArray(value) ? value : normalizeSchema(value)]));
+  return normalized;
+};
 
 const inputSchema = (model) => {
   if (!isObject(model.input_schema) || !isObject(model.input_schema.properties)) {
     throw new Error('This model does not provide a usable input schema. Choose another model or check its RunComfy API page.');
   }
-  return model.input_schema;
+  return normalizeSchema(model.input_schema);
 };
 
 const modelFields = async (z, bundle) => {
@@ -47,11 +68,11 @@ const collectInputs = (model, inputData) => {
     inputs[name] = value;
   }
   let validate;
-  try { validate = ajv.compile(schema); } catch { throw new Error('This model input schema cannot be validated. No request was submitted.'); }
+  try { validate = new Ajv({ strict: false, allErrors: true, validateFormats: false }).compile(schema); } catch { throw new Error('This model input schema cannot be validated. No request was submitted.'); }
   if (!validate(inputs)) {
     const errors = validate.errors.map((error) => `${error.instancePath || 'Inputs'} ${error.message}${error.params.missingProperty ? `: ${error.params.missingProperty}` : ''}`).join('; ');
     throw new Error(`Model input validation failed: ${errors}. No request was submitted.`);
   }
   return inputs;
 };
-module.exports = { getModel, modelFields, collectInputs, inputKey };
+module.exports = { getModel, modelFields, collectInputs, inputKey, isGenerationModel, normalizeSchema };
