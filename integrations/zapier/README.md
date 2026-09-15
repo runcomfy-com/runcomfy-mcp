@@ -43,6 +43,8 @@ Create a serverless deployment in RunComfy first. Choose it in **Run ComfyUI Wor
 
 Your deployment determines the correct node IDs and fields; the example above is illustrative. A complete ComfyUI API-format workflow can also be supplied. Set **Confirm Paid Request** to Yes to submit. Keep the returned deployment ID together with its request ID.
 
+ComfyUI can reuse cached results when inputs are unchanged. A request may then complete without a new download URL, leaving `output_urls` empty. To request a fresh output, vary the workflow's seed or another input before submitting. The correct node ID and input key depend on your workflow; check its API page for the appropriate override.
+
 ## Handle asynchronous results
 
 A typical Zap submits a request, uses **Delay by Zapier**, then checks **Get Request Status**. Continue to **Get Request Result** when status is `completed`. If it is still queued or in progress, schedule another read of the same request. Handle `failed` or `cancelled` separately.
