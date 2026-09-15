@@ -1,0 +1,8 @@
+node_modules
+build
+test
+.env
+.env.*
+.zapierrc
+README.md
+SUBMISSION.md

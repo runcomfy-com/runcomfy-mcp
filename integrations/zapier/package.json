@@ -1,0 +1,37 @@
+{
+  "name": "runcomfy-zapier",
+  "version": "1.0.1",
+  "description": "RunComfy image and video generation and ComfyUI workflow actions for Zapier.",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "NODE_ENV=test node --test test/*.test.js",
+    "validate": "zapier-platform validate --without-style",
+    "build": "zapier-platform build",
+    "platform-test": "zapier-platform test"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "zapier-platform-core": "19.1.0"
+  },
+  "devDependencies": {
+    "nock": "14.0.10",
+    "zapier-platform-cli": "19.1.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/runcomfy-com/runcomfy-mcp.git",
+    "directory": "integrations/zapier"
+  },
+  "homepage": "https://www.runcomfy.com",
+  "overrides": {
+    "zapier-platform-core": {
+      "form-data": "^4.0.6"
+    }
+  }
+}
