@@ -185,9 +185,13 @@ describe("OAuth consent form", () => {
     }).toString();
   }
 
-  it("completes a same-origin browser form submission", async () => {
-    const { env } = consentEnv();
-    const body = await startConsent(env);
+  it.each([
+    ["https://claude.ai/api/mcp/auth_callback", "https://claude.ai"],
+    ["https://www.cursor.com/agents/mcp/oauth/callback", "https://www.cursor.com"],
+    ["cursor://anysphere.cursor-mcp/oauth/callback", "cursor://anysphere.cursor-mcp/oauth/callback"],
+  ])("returns a same-origin consent cancellation to %s", async (redirectUri, callbackSources) => {
+    const { env, oauthProvider } = consentEnv(redirectUri);
+    const body = await startConsent(env, callbackSources);
     const response = await handleOAuthBridgeRequest(
       new Request("https://mcp.runcomfy.com/oauth/authorize/complete", {
         method: "POST",
@@ -204,14 +208,19 @@ describe("OAuth consent form", () => {
     expect(response?.headers.get("referrer-policy")).toBe("no-referrer");
     expect(response?.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
     const redirect = new URL(response?.headers.get("location") ?? "");
-    expect(redirect.origin).toBe("https://claude.ai");
+    expect(`${redirect.protocol}//${redirect.host}${redirect.pathname}`).toBe(redirectUri);
     expect(redirect.searchParams.get("error")).toBe("access_denied");
     expect(redirect.searchParams.get("state")).toBe("consent-state");
+    expect(redirect.searchParams.get("iss")).toBe("https://mcp.runcomfy.com");
+    expect(oauthProvider.completeAuthorization).not.toHaveBeenCalled();
   });
 
   it.each([
     ["https://claude.ai/api/mcp/auth_callback", "https://claude.ai"],
     ["https://connect.smithery.ai/oauth/callback", "https://connect.smithery.ai"],
+    ["https://www.cursor.com/agents/mcp/oauth/callback", "https://www.cursor.com"],
+    ["cursor://anysphere.cursor-mcp/oauth/callback", "cursor://anysphere.cursor-mcp/oauth/callback"],
+    ["http://localhost:8787/callback", "http://localhost:8787"],
     [
       "https://chatgpt.com/connector_platform_oauth_redirect",
       "https://chatgpt.com https://platform.openai.com",
@@ -262,6 +271,44 @@ describe("OAuth consent form", () => {
       expect((await submit())?.status).toBe(400);
       expect(oauthProvider.completeAuthorization).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
+  it.each([
+    { upstreamStatus: 401, completionFails: false, expectedStatus: 401 },
+    { upstreamStatus: 503, completionFails: false, expectedStatus: 503 },
+    { upstreamStatus: 200, completionFails: true, expectedStatus: 503 },
+  ])("retains Cursor's callback CSP after validation $upstreamStatus and completion failure $completionFails", async ({ upstreamStatus, completionFails, expectedStatus }) => {
+    const redirectUri = "cursor://anysphere.cursor-mcp/oauth/callback";
+    const { env, oauthProvider, values } = consentEnv(redirectUri);
+    const body = new URLSearchParams(await startConsent(env, redirectUri));
+    body.set("action", "authorize");
+    body.set("token", "v".repeat(32));
+    if (completionFails) oauthProvider.completeAuthorization.mockRejectedValueOnce(new Error("Unavailable"));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(null, { status: upstreamStatus }),
+    );
+    try {
+      const response = await handleOAuthBridgeRequest(
+        new Request("https://mcp.runcomfy.com/oauth/authorize/complete", {
+          method: "POST",
+          headers: {
+            "content-type": "application/x-www-form-urlencoded",
+            origin: "https://mcp.runcomfy.com",
+          },
+          body,
+        }),
+        env,
+      );
+      expect(response?.status).toBe(expectedStatus);
+      expect(response?.headers.get("content-security-policy")).toContain(
+        `form-action 'self' ${redirectUri};`,
+      );
+      expect(response?.headers.get("referrer-policy")).toBe("strict-origin");
+      expect(await response?.text()).not.toContain("v".repeat(32));
+      expect(values.size).toBe(1);
     } finally {
       fetchMock.mockRestore();
     }
@@ -367,6 +414,8 @@ describe("consent page form-action", () => {
     ],
     ["http://localhost:54545/callback", "form-action 'self' http://localhost:54545;"],
     ["http://127.0.0.1:54545/callback", "form-action 'self' http://127.0.0.1:54545;"],
+    ["https://www.cursor.com/agents/mcp/oauth/callback", "form-action 'self' https://www.cursor.com;"],
+    ["cursor://anysphere.cursor-mcp/oauth/callback", "form-action 'self' cursor://anysphere.cursor-mcp/oauth/callback;"],
     // Registration accepts and advertises IPv6 loopback, so the CSP has to name
     // it too -- otherwise the browser blocks the 302 back to the local listener
     // and the consent page silently dead-ends after the code is already minted.
@@ -421,6 +470,24 @@ describe("consent page form-action", () => {
     const csp = response?.headers.get("content-security-policy") ?? "";
     expect(csp).toContain(`form-action 'self' ${new URL(redirectUri).origin};`);
     expect(csp).not.toContain("https://platform.openai.com");
+  });
+
+  it.each([
+    "cursor://attacker.example/oauth/callback",
+    "cursor://anysphere.cursor-mcp.attacker.example/oauth/callback",
+    "cursor://anysphere.cursor-mcp/oauth/callback/extra",
+    "cursor://anysphere.cursor-mcp/oauth/callback?redirect=https://attacker.example",
+    "cursor://anysphere.cursor-mcp/oauth/callback#fragment",
+    "cursor://attacker@anysphere.cursor-mcp/oauth/callback",
+    "cursor://anysphere.cursor-mcp:8787/oauth/callback",
+    "cursor://anysphere.cursor-mcp/oauth/return",
+    "other-app://anysphere.cursor-mcp/oauth/callback",
+  ])("does not grant Cursor's form-action exception to %s", async (redirectUri) => {
+    const response = await handleOAuthBridgeRequest(
+      new Request("https://mcp.runcomfy.com/authorize"),
+      envFor(redirectUri),
+    );
+    expect(response?.headers.get("content-security-policy")).toContain("form-action 'self';");
   });
 
   it("never emits a source that would corrupt the header", async () => {
@@ -831,6 +898,8 @@ describe("dynamic client registration policy", () => {
     "https://claude.com/api/mcp/auth_callback",
     "https://chatgpt.com/connector_platform_oauth_redirect",
     "https://connect.smithery.ai/oauth/callback",
+    "https://www.cursor.com/agents/mcp/oauth/callback",
+    "cursor://anysphere.cursor-mcp/oauth/callback",
   ])("accepts the redirect URI %s", (uri) => {
     expect(isAllowedRedirectUri(uri)).toBe(true);
   });
@@ -845,6 +914,22 @@ describe("dynamic client registration policy", () => {
     "https://connect.smithery.ai/oauth/callback#fragment",
     "https://attacker@connect.smithery.ai/oauth/callback",
     "http://connect.smithery.ai/oauth/callback",
+    "https://www.cursor.com.attacker.example/agents/mcp/oauth/callback",
+    "https://www.cursor.com/agents/mcp/oauth/callback/extra",
+    "https://www.cursor.com/agents/mcp/oauth/callback?redirect=https://attacker.example",
+    "https://www.cursor.com/agents/mcp/oauth/callback#fragment",
+    "https://attacker@www.cursor.com/agents/mcp/oauth/callback",
+    "https://www.cursor.com:8443/agents/mcp/oauth/callback",
+    "http://www.cursor.com/agents/mcp/oauth/callback",
+    "cursor://attacker.example/oauth/callback",
+    "cursor://anysphere.cursor-mcp.attacker.example/oauth/callback",
+    "cursor://anysphere.cursor-mcp/oauth/callback/extra",
+    "cursor://anysphere.cursor-mcp/oauth/callback?redirect=https://attacker.example",
+    "cursor://anysphere.cursor-mcp/oauth/callback#fragment",
+    "cursor://attacker@anysphere.cursor-mcp/oauth/callback",
+    "cursor://anysphere.cursor-mcp:8787/oauth/callback",
+    "cursor://anysphere.cursor-mcp/oauth/return",
+    "other-app://anysphere.cursor-mcp/oauth/callback",
     "http://localhost.attacker.example/callback",
     "https://localhost:3000/callback#fragment",
     "http://127.0.0.1:8976/callback#fragment",
@@ -937,6 +1022,54 @@ describe("dynamic client registration policy", () => {
         redirect_uris: [
           "https://connect.smithery.ai/oauth/callback",
           "https://connect.smithery.ai/oauth/callback/other",
+        ],
+        grant_types: ["authorization_code"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+  });
+
+  it("registers Cursor's complete desktop callback list", async () => {
+    // Cursor 3.17.21's mcpProcessMain.js t7() registers all three, including
+    // the legacy app URI, even when the active redirect is loopback.
+    const redirectUris = [
+      "cursor://anysphere.cursor-mcp/oauth/callback",
+      "https://www.cursor.com/agents/mcp/oauth/callback",
+      "http://localhost:8787/callback",
+    ];
+    const response = await SELF.fetch("https://mcp.runcomfy.com/oauth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        client_name: "Cursor",
+        redirect_uris: redirectUris,
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = await response.json<Record<string, unknown>>();
+    expect(body.client_id).toBeTruthy();
+    expect(body.redirect_uris).toEqual(redirectUris);
+  });
+
+  it("rejects Cursor registration when any additional callback is unapproved", async () => {
+    const response = await SELF.fetch("https://mcp.runcomfy.com/oauth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        client_name: "Cursor",
+        redirect_uris: [
+          "cursor://anysphere.cursor-mcp/oauth/callback",
+          "https://www.cursor.com/agents/mcp/oauth/callback",
+          "http://localhost:8787/callback",
+          "cursor://attacker.example/oauth/callback",
         ],
         grant_types: ["authorization_code"],
         response_types: ["code"],
