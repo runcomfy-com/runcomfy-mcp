@@ -19,7 +19,8 @@ def calls():
 def api(calls):
     def respond(request):
         calls.append(request)
-        return httpx.Response(200, json={"request_id": "job-123", "status": "queued"})
+        id_field = "id" if request.url.host == "trainer-api.runcomfy.net" else "request_id"
+        return httpx.Response(200, json={id_field: "job-123", "status": "queued"})
     return RunComfyClient("unit-test-only", transport=httpx.MockTransport(respond))
 
 
@@ -33,7 +34,8 @@ def api(calls):
     ("start_training", {"allow_paid_run": True, "config_yaml": "job: extension\nconfig:\n  name: test", "gpu_type": "HOPPER_141"}, "POST", "https://trainer-api.runcomfy.net/prod/v1/trainers/ai-toolkit/jobs", {"config_file_format": "yaml", "config_file": "job: extension\nconfig:\n  name: test", "gpu_type": "HOPPER_141", "gpu_count": 1}),
 ])
 def test_api_contract(api, calls, operation, params, method, url, body):
-    assert api.run(operation, params)["request_id"] == "job-123"
+    id_field = "id" if operation == "start_training" else "request_id"
+    assert api.run(operation, params)[id_field] == "job-123"
     assert len(calls) == 1
     request = calls[0]
     assert request.method == method
@@ -197,3 +199,27 @@ def test_workflow_with_saved_defaults(api, calls):
     api.run("run_workflow", {"deployment_id": "dep", "allow_paid_run": True, "request_json": "{}"})
     assert json.loads(calls[0].content) == {}
     assert str(calls[0].url) == "https://api.runcomfy.net/prod/v2/deployments/dep/inference"
+
+
+@pytest.mark.parametrize("operation,parameters,id_field", [
+    ("generate_media", {"model_id": "a/b", "inputs_json": "{}"}, "request_id"),
+    ("run_workflow", {"deployment_id": "dep", "request_json": "{}"}, "request_id"),
+    ("start_training", {"config_yaml": "job: extension"}, "id"),
+])
+@pytest.mark.parametrize("acknowledgment", ["empty", "null", "list", "missing", "blank", "whitespace", "numeric", "wrong_id_field", "invalid_json"])
+def test_malformed_paid_acknowledgments_are_uncertain_without_retry(operation, parameters, id_field, acknowledgment):
+    payloads = {
+        "empty": {}, "null": None, "list": [{id_field: "job-123"}],
+        "missing": {"status": "queued"}, "blank": {id_field: ""},
+        "whitespace": {id_field: "  "}, "numeric": {id_field: 123},
+        "wrong_id_field": {"request_id" if id_field == "id" else "id": "job-123"},
+    }
+    calls = []
+    def respond(request):
+        calls.append(request)
+        content = "not-json" if acknowledgment == "invalid_json" else json.dumps(payloads[acknowledgment])
+        return httpx.Response(200, text=content)
+    api = RunComfyClient("unit-test-only", transport=httpx.MockTransport(respond))
+    with pytest.raises(RunComfyError, match="Check your RunComfy dashboard before retrying; the job may have been accepted"):
+        api.run(operation, {**parameters, "allow_paid_run": True})
+    assert len(calls) == 1

@@ -99,11 +99,17 @@ class RunComfyClient:
         try:
             payload = response.json()
         except ValueError:
-            raise RunComfyError("RunComfy returned an invalid JSON response.") from None
+            hint = " Check your RunComfy dashboard before retrying; the job may have been accepted." if method == "POST" else ""
+            raise RunComfyError("RunComfy returned an invalid JSON response." + hint) from None
         if isinstance(payload, dict) and payload.get("error_code") is not None:
             code = payload["error_code"]
             suffix = f" (code {code})" if isinstance(code, int) and not isinstance(code, bool) else ""
             raise RunComfyError("RunComfy rejected the request" + suffix + ". Check your inputs and account permissions.")
+        if method == "POST":
+            id_field = "id" if service == "training" else "request_id"
+            job_id = payload.get(id_field) if isinstance(payload, dict) else None
+            if not isinstance(job_id, str) or not job_id.strip():
+                raise RunComfyError("RunComfy returned an invalid submission acknowledgment. Check your RunComfy dashboard before retrying; the job may have been accepted.")
         # Do not echo an API credential even if an upstream response reflects it.
         return self._redact(payload)
 

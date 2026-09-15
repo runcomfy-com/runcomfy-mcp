@@ -57,7 +57,7 @@ Prepare and upload the training dataset in RunComfy, then obtain a working [AI T
 
 Every submission starts a new billable job and returns immediately after the API acknowledges it. The tools do not wait for GPU generation or training, retry submissions, or automatically poll. Use a bounded Dify loop with a delay and maximum iterations, or a later workflow invocation, to check status. Branch on the API's terminal success/failure state. Stop polling on failure or cancellation, and request results after completion.
 
-If a submission times out or loses its connection, check your RunComfy dashboard before retrying: the service may have accepted the job. Repeating a submission can create duplicate charges. Status and result requests use the original job ID. There is no webhook or arbitrary URL-fetching tool.
+If a submission times out, loses its connection, or returns an acknowledgment without a valid job ID, check your RunComfy dashboard before retrying: the service may have accepted the job. Repeating a submission can create duplicate charges. Status and result requests use the original job ID. There is no webhook or arbitrary URL-fetching tool.
 
 Returned media and model artifact URLs may be temporary or grant access to private outputs. Treat them as account data and share only as intended. The plugin returns URLs as JSON; it does not download or store the resulting files in Dify.
 
