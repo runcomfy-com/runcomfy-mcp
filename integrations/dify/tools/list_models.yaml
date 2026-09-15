@@ -1,0 +1,60 @@
+identity:
+  name: list_models
+  author: runcomfy-com
+  label:
+    en_US: Browse AI Image and Video Models
+description:
+  human:
+    en_US: Search available AI image models and AI video models by model name or capability,
+      including Seedance, Wan, FLUX, LTX and Seedream. Returns exact model IDs, input
+      summaries and pricing. Availability changes; use current results.
+  llm: Search available AI image models and AI video models by model name or capability,
+    including Seedance, Wan, FLUX, LTX and Seedream. Returns exact model IDs, input
+    summaries and pricing. Availability changes; use current results.
+parameters:
+- name: search
+  type: string
+  required: false
+  label:
+    en_US: Search
+  human_description:
+    en_US: Model or capability keywords, e.g. FLUX, Seedream, Seedance, Wan or LTX.
+  llm_description: Model or capability keywords, e.g. FLUX, Seedream, Seedance, Wan
+    or LTX.
+  form: llm
+- name: category
+  type: string
+  required: false
+  label:
+    en_US: Category
+  human_description:
+    en_US: Optional API category, e.g. text-to-image or image-to-video.
+  llm_description: Optional API category, e.g. text-to-image or image-to-video.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Results per page
+  human_description:
+    en_US: Number of results, 1 to 100.
+  llm_description: Number of results, 1 to 100.
+  form: llm
+  default: 20
+  min: 1
+  max: 100
+- name: offset
+  type: number
+  required: false
+  label:
+    en_US: Offset
+  human_description:
+    en_US: Pagination offset starting at zero.
+  llm_description: Pagination offset starting at zero.
+  form: llm
+  default: 0
+  min: 0
+  max: 100000
+extra:
+  python:
+    source: tools/list_models.py

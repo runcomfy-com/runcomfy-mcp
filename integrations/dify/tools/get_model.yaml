@@ -1,0 +1,27 @@
+identity:
+  name: get_model
+  author: runcomfy-com
+  label:
+    en_US: Get Model Input Schema
+description:
+  human:
+    en_US: Read the full input schema and pricing for an AI image generator or AI
+      video generator before submitting. Use field names and allowed values from this
+      response.
+  llm: Read the full input schema and pricing for an AI image generator or AI video
+    generator before submitting. Use field names and allowed values from this response.
+parameters:
+- name: model_id
+  type: string
+  required: true
+  label:
+    en_US: Model ID
+  human_description:
+    en_US: Exact model_id returned by Browse AI Image and Video Models. Keep every
+      slash. Read Get Model Input Schema first.
+  llm_description: Exact model_id returned by Browse AI Image and Video Models. Keep
+    every slash. Read Get Model Input Schema first.
+  form: llm
+extra:
+  python:
+    source: tools/get_model.py

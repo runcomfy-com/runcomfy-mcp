@@ -1,0 +1,62 @@
+identity:
+  name: start_training
+  author: runcomfy-com
+  label:
+    en_US: Start LoRA Training
+description:
+  human:
+    en_US: Create a paid AI Toolkit LoRA training job on one RunComfy GPU. Requires
+      a valid YAML configuration and an existing uploaded dataset prepared in RunComfy.
+      The plugin forwards configuration to RunComfy, which runs training remotely.
+      Returns job id immediately. Use status/result with service=training.
+  llm: Create a paid AI Toolkit LoRA training job on one RunComfy GPU. Requires a
+    valid YAML configuration and an existing uploaded dataset prepared in RunComfy.
+    The plugin forwards configuration to RunComfy, which runs training remotely. Returns
+    job id immediately. Use status/result with service=training.
+parameters:
+- name: config_yaml
+  type: string
+  required: true
+  label:
+    en_US: AI Toolkit YAML configuration
+  human_description:
+    en_US: Complete AI Toolkit YAML configuration from RunComfy training setup, including
+      a dataset already uploaded in your account. Do not insert account tokens in
+      the configuration.
+  llm_description: Complete AI Toolkit YAML configuration from RunComfy training setup,
+    including a dataset already uploaded in your account. Do not insert account tokens
+    in the configuration.
+  form: llm
+- name: gpu_type
+  type: select
+  required: true
+  label:
+    en_US: GPU
+  human_description:
+    en_US: GPU type for one training GPU. H100 uses ADA_80_PLUS; H200 uses HOPPER_141.
+  llm_description: GPU type for one training GPU. H100 uses ADA_80_PLUS; H200 uses
+    HOPPER_141.
+  form: llm
+  default: ADA_80_PLUS
+  options:
+  - value: ADA_80_PLUS
+    label:
+      en_US: H100
+  - value: HOPPER_141
+    label:
+      en_US: H200
+- name: allow_paid_run
+  type: boolean
+  required: true
+  label:
+    en_US: Allow paid run
+  human_description:
+    en_US: Enable to permit this tool to create jobs that charge your RunComfy balance.
+      Each invocation creates a new job.
+  llm_description: Enable to permit this tool to create jobs that charge your RunComfy
+    balance. Each invocation creates a new job.
+  form: form
+  default: false
+extra:
+  python:
+    source: tools/start_training.py

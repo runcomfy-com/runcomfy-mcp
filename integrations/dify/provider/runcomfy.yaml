@@ -1,0 +1,39 @@
+identity:
+  author: runcomfy-com
+  name: runcomfy
+  label:
+    en_US: RunComfy
+  description:
+    en_US: Run ComfyUI workflows in the cloud. AI image generator, AI video generator
+      and LoRA training on GPU, with Seedance, Wan, FLUX, LTX and Seedream model discovery.
+  icon: icon.webp
+  tags:
+  - image
+  - videos
+  - design
+  - productivity
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: RunComfy API token
+    placeholder:
+      en_US: Enter your RunComfy API token
+    help:
+      en_US: Create a token in your RunComfy account. Generation and training require
+        RunComfy credit. Never put a token in prompts or tool inputs.
+    url: https://www.runcomfy.com/profile
+tools:
+- tools/list_models.yaml
+- tools/get_model.yaml
+- tools/generate_media.yaml
+- tools/list_deployments.yaml
+- tools/get_deployment.yaml
+- tools/run_workflow.yaml
+- tools/get_job_status.yaml
+- tools/get_job_result.yaml
+- tools/start_training.yaml
+extra:
+  python:
+    source: provider/runcomfy.py

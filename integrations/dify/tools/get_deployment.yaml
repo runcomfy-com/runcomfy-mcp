@@ -1,0 +1,24 @@
+identity:
+  name: get_deployment
+  author: runcomfy-com
+  label:
+    en_US: Get ComfyUI Deployment
+description:
+  human:
+    en_US: Read a deployed ComfyUI workflow, its payload and README before inference.
+      Use the documented overrides or workflow_api_json for Run ComfyUI Workflow.
+  llm: Read a deployed ComfyUI workflow, its payload and README before inference.
+    Use the documented overrides or workflow_api_json for Run ComfyUI Workflow.
+parameters:
+- name: deployment_id
+  type: string
+  required: true
+  label:
+    en_US: Deployment ID
+  human_description:
+    en_US: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  llm_description: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  form: llm
+extra:
+  python:
+    source: tools/get_deployment.py

@@ -1,0 +1,14 @@
+.git/
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+tests/
+DEVELOPMENT.md
+*.difypkg
+dist/
+validation-report/

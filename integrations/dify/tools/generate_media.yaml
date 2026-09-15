@@ -1,0 +1,55 @@
+identity:
+  name: generate_media
+  author: runcomfy-com
+  label:
+    en_US: Generate Image or Video
+description:
+  human:
+    en_US: Create a paid, asynchronous image or video generation job using a RunComfy
+      model. Read Get Model Input Schema and pass its input object as JSON, without
+      an inputs wrapper. Returns request_id immediately. Use Get Job Status and Get
+      Job Result with service=model; never submit again just to poll.
+  llm: Create a paid, asynchronous image or video generation job using a RunComfy
+    model. Read Get Model Input Schema and pass its input object as JSON, without
+    an inputs wrapper. Returns request_id immediately. Use Get Job Status and Get
+    Job Result with service=model; never submit again just to poll.
+parameters:
+- name: model_id
+  type: string
+  required: true
+  label:
+    en_US: Model ID
+  human_description:
+    en_US: Exact model_id returned by Browse AI Image and Video Models. Keep every
+      slash. Read Get Model Input Schema first.
+  llm_description: Exact model_id returned by Browse AI Image and Video Models. Keep
+    every slash. Read Get Model Input Schema first.
+  form: llm
+- name: inputs_json
+  type: string
+  required: true
+  label:
+    en_US: Model inputs JSON
+  human_description:
+    en_US: A JSON object matching the selected model input_schema, such as {"prompt":"A
+      red bicycle on a quiet street"}. Include required media URLs and model-specific
+      settings from the schema.
+  llm_description: A JSON object matching the selected model input_schema, such as
+    {"prompt":"A red bicycle on a quiet street"}. Include required media URLs and
+    model-specific settings from the schema.
+  form: llm
+- name: allow_paid_run
+  type: boolean
+  required: true
+  label:
+    en_US: Allow paid run
+  human_description:
+    en_US: Enable to permit this tool to create jobs that charge your RunComfy balance.
+      Each invocation creates a new job.
+  llm_description: Enable to permit this tool to create jobs that charge your RunComfy
+    balance. Each invocation creates a new job.
+  form: form
+  default: false
+extra:
+  python:
+    source: tools/generate_media.py
