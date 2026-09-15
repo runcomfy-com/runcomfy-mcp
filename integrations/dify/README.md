@@ -59,6 +59,8 @@ Every submission starts a new billable job and returns immediately after the API
 
 If a submission times out, loses its connection, or returns an acknowledgment without a valid job ID, check your RunComfy dashboard before retrying: the service may have accepted the job. Repeating a submission can create duplicate charges. Status and result requests use the original job ID. There is no webhook or arbitrary URL-fetching tool.
 
+Disable **retry on failure** on Dify submission nodes, and instruct agents to avoid automatically retrying paid tools. Dify workflows or agents can repeat a failed tool independently of this plugin's HTTP client; the absence of client retries does not make submissions idempotent. Reconcile any existing job in RunComfy before submitting again.
+
 Returned media and model artifact URLs may be temporary or grant access to private outputs. Treat them as account data and share only as intended. The plugin returns URLs as JSON; it does not download or store the resulting files in Dify.
 
 ## Security and privacy
