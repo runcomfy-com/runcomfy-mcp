@@ -1,0 +1,15 @@
+identity:
+  name: list_deployments
+  author: runcomfy-com
+  label:
+    en_US: List ComfyUI Deployments
+description:
+  human:
+    en_US: List your RunComfy serverless ComfyUI workflow deployments and their IDs.
+      This read-only tool does not create GPU resources.
+  llm: List your RunComfy serverless ComfyUI workflow deployments and their IDs. This
+    read-only tool does not create GPU resources.
+parameters: []
+extra:
+  python:
+    source: tools/list_deployments.py

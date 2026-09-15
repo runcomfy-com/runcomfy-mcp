@@ -1,0 +1,52 @@
+identity:
+  name: run_workflow
+  author: runcomfy-com
+  label:
+    en_US: Run ComfyUI Workflow
+description:
+  human:
+    en_US: Create a paid, asynchronous ComfyUI inference job on an existing RunComfy
+      deployment. Read Get ComfyUI Deployment first. Returns request_id immediately.
+      Use Get Job Status and Get Job Result with service=workflow and the same deployment
+      ID.
+  llm: Create a paid, asynchronous ComfyUI inference job on an existing RunComfy deployment.
+    Read Get ComfyUI Deployment first. Returns request_id immediately. Use Get Job
+    Status and Get Job Result with service=workflow and the same deployment ID.
+parameters:
+- name: deployment_id
+  type: string
+  required: true
+  label:
+    en_US: Deployment ID
+  human_description:
+    en_US: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  llm_description: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  form: llm
+- name: request_json
+  type: string
+  required: true
+  label:
+    en_US: Workflow request JSON
+  human_description:
+    en_US: The deployment request JSON object containing overrides and/or workflow_api_json,
+      with optional extra_data. Copy the deployment payload and change the intended
+      inputs.
+  llm_description: The deployment request JSON object containing overrides and/or
+    workflow_api_json, with optional extra_data. Copy the deployment payload and change
+    the intended inputs.
+  form: llm
+- name: allow_paid_run
+  type: boolean
+  required: true
+  label:
+    en_US: Allow paid run
+  human_description:
+    en_US: Enable to permit this tool to create jobs that charge your RunComfy balance.
+      Each invocation creates a new job.
+  llm_description: Enable to permit this tool to create jobs that charge your RunComfy
+    balance. Each invocation creates a new job.
+  form: form
+  default: false
+extra:
+  python:
+    source: tools/run_workflow.py

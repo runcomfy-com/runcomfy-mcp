@@ -1,0 +1,58 @@
+identity:
+  name: get_job_status
+  author: runcomfy-com
+  label:
+    en_US: Get Job Status
+description:
+  human:
+    en_US: Read the status of one image/video generation, ComfyUI workflow, or LoRA
+      training job. This tool performs one request and does not wait. Schedule another
+      status call later if the job is queued or running.
+  llm: Read the status of one image/video generation, ComfyUI workflow, or LoRA training
+    job. This tool performs one request and does not wait. Schedule another status
+    call later if the job is queued or running.
+parameters:
+- name: service
+  type: select
+  required: true
+  label:
+    en_US: Job service
+  human_description:
+    en_US: 'Select the service that created the job: model for Generate Image or Video,
+      workflow for Run ComfyUI Workflow, training for Start LoRA Training.'
+  llm_description: 'Select the service that created the job: model for Generate Image
+    or Video, workflow for Run ComfyUI Workflow, training for Start LoRA Training.'
+  form: llm
+  options:
+  - value: model
+    label:
+      en_US: Model
+  - value: workflow
+    label:
+      en_US: Workflow
+  - value: training
+    label:
+      en_US: Training
+- name: job_id
+  type: string
+  required: true
+  label:
+    en_US: Request or job ID
+  human_description:
+    en_US: The request_id (model/workflow) or job id (training) returned by the submit
+      tool.
+  llm_description: The request_id (model/workflow) or job id (training) returned by
+    the submit tool.
+  form: llm
+- name: deployment_id
+  type: string
+  required: false
+  label:
+    en_US: Deployment ID
+  human_description:
+    en_US: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  llm_description: Your RunComfy serverless deployment ID from List ComfyUI Deployments.
+  form: llm
+extra:
+  python:
+    source: tools/get_job_status.py
