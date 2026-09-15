@@ -5,6 +5,7 @@ import {
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { CURSOR_DESKTOP_REDIRECT_URI, CURSOR_HOSTED_REDIRECT_URI } from "./oauth-clients";
 
 import {
   handleOAuthBridgeRequest,
@@ -46,6 +47,7 @@ const HOSTED_CLIENT_REDIRECT_URIS = new Set([
   "https://claude.com/api/mcp/auth_callback",
   "https://chatgpt.com/connector_platform_oauth_redirect",
   "https://connect.smithery.ai/oauth/callback",
+  CURSOR_HOSTED_REDIRECT_URI,
 ]);
 
 const LOOPBACK_REDIRECT_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -253,12 +255,14 @@ export function isProviderIssuedToken(token: string): boolean {
  * Redirect URIs accepted from dynamic client registration. Loopback callbacks
  * are open by port because RFC 8252 native clients bind an ephemeral one, and
  * an authorization code delivered there never leaves the user's own machine.
- * Every other destination must be an exact, vendor-owned entry so a public
- * registration cannot be used to redirect someone else's code off-host.
+ * Other destinations must be exact approved callbacks. Cursor's legacy app
+ * callback is also accepted because its native client includes it in every
+ * registration. Custom protocol ownership is OS-managed, so mandatory S256
+ * PKCE remains essential to protect intercepted codes.
  */
 export function isAllowedRedirectUri(value: unknown): boolean {
   if (typeof value !== "string" || value.length === 0 || value.length > 2_048) return false;
-  if (HOSTED_CLIENT_REDIRECT_URIS.has(value)) return true;
+  if (value === CURSOR_DESKTOP_REDIRECT_URI || HOSTED_CLIENT_REDIRECT_URIS.has(value)) return true;
 
   let uri: URL;
   try {
@@ -631,7 +635,7 @@ const provider = new OAuthProvider<Env>({
       return {
         code: "invalid_client_metadata",
         description:
-          "redirect_uris must be loopback callbacks (http://localhost, http://127.0.0.1 or http://[::1] on any port), as used by Claude Code and other local MCP clients, or a supported hosted client callback.",
+          "redirect_uris must be loopback callbacks (http://localhost, http://127.0.0.1 or http://[::1] on any port), as used by Claude Code and other local MCP clients, or an exact supported client callback.",
         status: 400,
       };
     }

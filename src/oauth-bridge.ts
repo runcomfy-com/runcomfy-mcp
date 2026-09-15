@@ -3,6 +3,7 @@ import {
   type AuthRequest,
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
+import { CURSOR_DESKTOP_REDIRECT_URI } from "./oauth-clients";
 
 const DEFAULT_RUNCOMFY_WEB_BASE_URL = "https://www.runcomfy.com";
 const RUNCOMFY_TOKEN_VALIDATION_URL = "https://api.runcomfy.net/prod/v2/deployments";
@@ -911,10 +912,13 @@ function getRedirectOriginLabel(redirectUri: string): string | null {
  * against the original form's policy too.
  *
  * Keep these sources separate from getRedirectOriginLabel: that is display
- * text and may contain a space, which would corrupt the header. Only http(s)
- * origins are emitted, which is all client registration accepts.
+ * text and may contain a space, which would corrupt the header. Apart from
+ * Cursor's exact app callback, only http(s) origins are emitted.
  */
 function formActionSource(redirectUri: string): string | null {
+  // Custom schemes have an opaque origin. Permit only the exact registered
+  // Cursor callback, never every handler or destination under cursor:.
+  if (redirectUri === CURSOR_DESKTOP_REDIRECT_URI) return CURSOR_DESKTOP_REDIRECT_URI;
   let url: URL;
   try {
     url = new URL(redirectUri);

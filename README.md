@@ -92,8 +92,8 @@ Every client authenticates with a RunComfy API token from your
 
 - **API token header** — works in any Streamable HTTP client. Simplest, and the
   only option for clients without a browser OAuth flow.
-- **Browser OAuth** — no token in a config file. Supported by Claude.ai and by
-  local clients that register a loopback callback, such as Claude Code.
+- **Browser OAuth** — no token in a config file. Supported by Claude.ai, Cursor,
+  and local clients that register a loopback callback, such as Claude Code.
 
 ### Claude Code
 
@@ -176,7 +176,7 @@ is never returned to Claude.
 - **URL**: `https://mcp.runcomfy.com/mcp`
 - **Transport**: Streamable HTTP
 - **Auth**: `Authorization: Bearer <token>` on every request, or OAuth 2.1 with
-  a loopback redirect URI
+  a loopback redirect URI or an exact supported client callback
 
 ### Troubleshooting
 
@@ -184,7 +184,7 @@ is never returned to Claude.
 | --- | --- |
 | `401` with `RunComfy rejected this API token` | The token is wrong, expired, or truncated on copy. Generate a new one in [Profile](https://www.runcomfy.com/profile) — the response body names the fix. |
 | `401` with no `error_description` | No `Authorization` header reached the server. Check the header is quoted as one argument: `--header "Authorization: Bearer ..."`. |
-| `invalid_client_metadata` during OAuth | The client registered a non-loopback, non-hosted redirect URI. Use the token header instead. |
+| `invalid_client_metadata` during OAuth | The client registered a callback outside the loopback and exact client allowlist. Use a supported callback or the token header. |
 | `invalid_target` during OAuth | The configured URL must be exactly `https://mcp.runcomfy.com/mcp` — no trailing slash. RFC 8707 binds the token to that exact resource. |
 | `503` with `Retry-After` | RunComfy's API could not be reached to verify the token. Retry. |
 | `429` | More than 600 token-authenticated requests a minute from one IP. |
@@ -223,7 +223,7 @@ contains a colon.
 
 - **Cloudflare Worker** (`src/index.ts`) — OAuth 2.1 authorization server and protected-resource boundary. Missing, invalid, expired, or wrong-audience credentials are rejected before MCP initialization or tool discovery.
 - **Direct API token** (`src/index.ts`) — a RunComfy Profile token presented as `Authorization: Bearer` is revalidated against `api.runcomfy.net` on every request, rate-limited per source IP, and never forwarded as-is.
-- **OAuth consent** (`src/oauth-bridge.ts`) — validates an existing RunComfy Profile token, stores it only in encrypted OAuth grant data, and issues a separate audience-bound MCP access token. Dynamic client registration accepts loopback callbacks (Claude Code and other local clients) plus an exact allowlist of hosted client callbacks.
+- **OAuth consent** (`src/oauth-bridge.ts`) — validates an existing RunComfy Profile token, stores it only in encrypted OAuth grant data, and issues a separate audience-bound MCP access token. Dynamic client registration accepts loopback callbacks (Claude Code and other local clients), an exact allowlist of hosted client callbacks, and Cursor's exact legacy app callback. Cursor registers `cursor://anysphere.cursor-mcp/oauth/callback`, `https://www.cursor.com/agents/mcp/oauth/callback`, and `http://localhost:8787/callback` together; all three must be accepted even when the active redirect uses localhost. Arbitrary custom protocols and callback variants remain rejected, and S256 PKCE is required.
 - **Python container** (`server.py`) — FastMCP app with 31 tools across the Serverless, Model, and Trainer APIs. It has no shared/operator credential and fails closed unless the authenticated edge supplies the current user's request-scoped RunComfy token.
 - **Cloudflare Container** auto-starts on first request, sleeps after 10 minutes idle.
 
