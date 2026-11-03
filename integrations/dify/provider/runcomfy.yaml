@@ -23,7 +23,7 @@ credentials_for_provider:
     help:
       en_US: Create a token in your RunComfy account. Generation and training require
         RunComfy credit. Never put a token in prompts or tool inputs.
-    url: https://www.runcomfy.com/profile
+    url: https://www.runcomfy.com/profile?section=api-tokens&utm_source=dify&utm_medium=plugin&utm_campaign=runcomfy-plugin&utm_content=api-token-setup
 tools:
 - tools/list_models.yaml
 - tools/get_model.yaml
