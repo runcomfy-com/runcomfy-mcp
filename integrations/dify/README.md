@@ -12,7 +12,7 @@ Discover AI image models and AI video models from **Seedance, Wan, FLUX, LTX, an
 
 ## Setup
 
-1. Create or sign in to your [RunComfy account](https://www.runcomfy.com/auth/sign-in). Obtain an API token from your account settings.
+1. Create or sign in to your [RunComfy account](https://www.runcomfy.com/profile?section=api-tokens&utm_source=dify&utm_medium=plugin&utm_campaign=runcomfy-plugin&utm_content=api-token-setup). Obtain an API token from your account settings.
 2. Install the RunComfy plugin in Dify. During pre-release testing, use **Plugins → Install plugin → Local package file** and select the supplied `.difypkg`.
 3. Open RunComfy authorization and enter the token in the **RunComfy API token** secret field. Validation makes a read-only balance request; it does not start a job.
 4. Add a RunComfy tool to a Dify workflow or agent. Enable **Allow paid run** in each submission tool only when that workflow is permitted to spend RunComfy credit. Discovery and status tools do not need that setting.
