@@ -13,6 +13,13 @@ HOSTS = {
     "training": "https://trainer-api.runcomfy.net",
 }
 MAX_INPUT_BYTES = 1_000_000
+PLUGIN_VERSION = "0.1.2"
+# Fixed labels that let RunComfy count this plugin's requests by version. They
+# name the plugin only and carry no user, workspace or workflow data.
+PLUGIN_HEADERS = {
+    "User-Agent": f"runcomfy-dify-plugin/{PLUGIN_VERSION}",
+    "X-RunComfy-Source": "dify-plugin",
+}
 
 
 class RunComfyError(Exception):
@@ -80,7 +87,8 @@ class RunComfyClient:
             with httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0), follow_redirects=False,
                               trust_env=False, transport=self.transport) as client:
                 response = client.request(method, HOSTS[service] + path, params=params, json=body,
-                                          headers={"Authorization": f"Bearer {self.api_key}",
+                                          headers={**PLUGIN_HEADERS,
+                                                   "Authorization": f"Bearer {self.api_key}",
                                                    "Accept": "application/json"})
         except httpx.TimeoutException:
             hint = " Check your RunComfy dashboard before retrying; the job may have been accepted." if method == "POST" else " Try again later."

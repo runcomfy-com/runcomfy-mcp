@@ -22,9 +22,9 @@ Use a dedicated RunComfy test credential in the provider's secret field. Validat
 Run from the repository root:
 
 ```sh
-dify plugin package integrations/dify -o runcomfy-0.1.1.difypkg
+dify plugin package integrations/dify -o runcomfy-0.1.2.difypkg
 python3 /path/to/dify-marketplace-toolkit/validator/validate-difypkg.py \
-  runcomfy-0.1.1.difypkg --output-dir /path/to/validation-report \
+  runcomfy-0.1.2.difypkg --output-dir /path/to/validation-report \
   --pr-body-file /path/to/submission-body.md
 ```
 

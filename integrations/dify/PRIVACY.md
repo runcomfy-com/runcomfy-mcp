@@ -4,7 +4,7 @@ This policy covers the open-source RunComfy Dify Tool plugin. RunComfy's service
 
 ## Data sent to RunComfy
 
-When you use a tool, the plugin sends the relevant input to RunComfy: search terms, model IDs, generation prompts and parameters, supplied media URLs, deployment and job identifiers, ComfyUI workflow JSON/overrides, or AI Toolkit training YAML. The RunComfy API token configured in Dify is sent in the HTTPS Authorization header. Account credential validation requests your RunComfy balance without starting a paid job.
+When you use a tool, the plugin sends the relevant input to RunComfy: search terms, model IDs, generation prompts and parameters, supplied media URLs, deployment and job identifiers, ComfyUI workflow JSON/overrides, or AI Toolkit training YAML. The RunComfy API token configured in Dify is sent in the HTTPS Authorization header. Every request also carries two fixed headers, `User-Agent: runcomfy-dify-plugin/<plugin version>` and `X-RunComfy-Source: dify-plugin`, so RunComfy can count requests that come from this plugin; they contain no user, workspace or workflow data. Account credential validation requests your RunComfy balance without starting a paid job.
 
 The plugin itself connects only to `api.runcomfy.net`, `model-api.runcomfy.net`, and `trainer-api.runcomfy.net`. Generation/training services may process supplied media URLs or model inputs as part of your requested RunComfy job. Do not submit private information you do not intend RunComfy to process. Do not embed API credentials in prompts, workflow payloads, or training YAML.
 

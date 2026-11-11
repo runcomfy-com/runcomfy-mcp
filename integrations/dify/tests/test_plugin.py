@@ -42,6 +42,10 @@ def test_api_contract(api, calls, operation, params, method, url, body):
     assert str(request.url) == url
     assert request.headers["Authorization"] == "Bearer unit-test-only"
     assert (json.loads(request.content) if request.content else None) == body
+    # RunComfy counts plugin requests by these labels, per published version.
+    version = yaml.safe_load(Path("manifest.yaml").read_text())["version"]
+    assert request.headers["User-Agent"] == f"runcomfy-dify-plugin/{version}"
+    assert request.headers["X-RunComfy-Source"] == "dify-plugin"
 
 
 @pytest.mark.parametrize("service,prefix", [
